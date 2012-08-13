@@ -9,13 +9,17 @@ QT       += core gui
 TARGET = CustomWidgets
 TEMPLATE = app
 
+INCLUDEPATH += E:\Programming\boost_1_47_0\include
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    MatrixWidget.cpp
+    MatrixWidget.cpp \
+    CurvesWidget.cpp
 
 HEADERS  += mainwindow.h \
-    MatrixWidget.hpp
+    MatrixWidget.hpp \
+    CurvesWidget.hpp \
+    spline.hpp
 
 FORMS    += mainwindow.ui
 

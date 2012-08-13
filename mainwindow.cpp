@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "MatrixWidget.hpp"
+#include "CurvesWidget.hpp"
 
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -12,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    QWidget * tab1 = new QWidget();
     MatrixWidget * mat = new MatrixWidget;
     QPushButton * btnH = new QPushButton("Flip H");
     QPushButton * btnV = new QPushButton("Flip V");
@@ -31,7 +33,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(btnT, SIGNAL(clicked()), mat, SLOT(transpose()));
     connect(btnA, SIGNAL(clicked()), mat, SLOT(antiTranspose()));
 
-    ui->centralWidget->setLayout(layout);
+    tab1->setLayout(layout);
+
+    ui->tabWidget->addTab(tab1, "MatrixWidget");
+
+    CurvesWidget * cw = new CurvesWidget();
+    ui->tabWidget->addTab(cw, "CurvesWidget");
 }
 
 MainWindow::~MainWindow()
