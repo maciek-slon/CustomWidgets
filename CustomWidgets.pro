@@ -14,12 +14,14 @@ INCLUDEPATH += E:\Programming\boost_1_47_0\include
 SOURCES += main.cpp\
         mainwindow.cpp \
     MatrixWidget.cpp \
-    CurvesWidget.cpp
+    CurvesWidget.cpp \
+    ctkDoubleSlider.cpp
 
 HEADERS  += mainwindow.h \
     MatrixWidget.hpp \
     CurvesWidget.hpp \
-    spline.hpp
+    spline.hpp \
+    ctkDoubleSlider.hpp
 
 FORMS    += mainwindow.ui
 

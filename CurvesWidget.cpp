@@ -17,11 +17,38 @@ CurvesWidget::CurvesWidget(QWidget *parent) :
     m_closest = NULL;
     m_grab = false;
 
-    m_spline.setLowBC(Spline::FIXED_1ST_DERIV_BC);
+    m_spline.setType(Spline::LINEAR);
+
+    m_grid_size = 8;
+    m_snap_rng = 0.2;
 }
 
 CurvesWidget::~CurvesWidget()
 {
+}
+
+void CurvesWidget::setInterpolation(int method)
+{
+    switch(method) {
+    case 0: m_spline.setType(Spline::LINEAR); break;
+    case 1: m_spline.setType(Spline::CUBIC); break;
+    default: break;
+    }
+
+    repaint();
+}
+
+void CurvesWidget::setSnapRange(double range)
+{
+    m_snap_rng = range;
+}
+
+void CurvesWidget::setGridSize(int size)
+{
+    if (size < 1) return;
+
+    m_grid_size = size;
+    repaint();
 }
 
 void CurvesWidget::paintBackground(QPainter & painter)
@@ -36,12 +63,12 @@ void CurvesWidget::paintBackground(QPainter & painter)
 
     int maxw = width() - 1;
     int maxh = height() - 1;
-    for (int i = 0; i < 8; ++i) {
-        pairs.push_back(QPoint(i * width() / 8, 0));
-        pairs.push_back(QPoint(i * width() / 8, maxh));
+    for (int i = 0; i < m_grid_size; ++i) {
+        pairs.push_back(QPoint(i * width() / m_grid_size, 0));
+        pairs.push_back(QPoint(i * width() / m_grid_size, maxh));
 
-        pairs.push_back(QPoint(0, i * height() / 8));
-        pairs.push_back(QPoint(maxw, i * height() / 8));
+        pairs.push_back(QPoint(0, i * height() / m_grid_size));
+        pairs.push_back(QPoint(maxw, i * height() / m_grid_size));
     }
 
     pairs.push_back(QPoint(maxw, 0));
@@ -88,6 +115,7 @@ void CurvesWidget::paintSpline(QPainter &painter)
     for (int i = 1; i < 256; ++i) {
         float x = 1.0 * i / 255;
         float y = m_spline(x);
+        y = y < 0 ? 0 : y > 1 ? 1 : y;
         painter.drawLine(QPointF(width() * lx, height() * (1-ly)), QPointF(width() * x, height() * (1-y)));
         lx = x;
         ly = y;
@@ -107,15 +135,19 @@ void CurvesWidget::paintEvent(QPaintEvent *)
 void CurvesWidget::mouseMoveEvent(QMouseEvent *event)
 {
     if (!m_grab) {
-        m_closest = findClosestPoint(event->pos());
+        m_closest = findClosestPoint(event->pos(), m_closest_id);
+        if (m_closest)
+            setCursor(Qt::CrossCursor);
+        else
+            setCursor(Qt::ArrowCursor);
     } else {
-        *m_closest = project(event->pos());
+        *m_closest = snap(project(event->pos()));
     }
 
     repaint();
 }
 
-QPointF * CurvesWidget::findClosestPoint(QPoint pt)
+QPointF * CurvesWidget::findClosestPoint(QPoint pt, int & id)
 {
     QPointF * ret = NULL;
     int len, min_len = 30;
@@ -125,6 +157,7 @@ QPointF * CurvesWidget::findClosestPoint(QPoint pt)
         if (len < min_len) {
             min_len = len;
             ret = &m_points[i];
+            id = i;
         }
     }
     return ret;
@@ -132,12 +165,20 @@ QPointF * CurvesWidget::findClosestPoint(QPoint pt)
 
 void CurvesWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (!m_closest) {
-        m_points.push_back(QPointF(1.0 * event->pos().x() / width(), 1.0 - 1.0 * event->pos().y() / height()));
-        m_closest = &m_points[m_points.size() - 1];
-    }
+    if (event->button() == Qt::LeftButton) {
+        if (!m_closest) {
+            m_points.push_back(QPointF(1.0 * event->pos().x() / width(), 1.0 - 1.0 * event->pos().y() / height()));
+            m_closest = &m_points[m_points.size() - 1];
+            m_closest_id = m_points.size() - 1;
+        }
 
-    m_grab = true;
+        m_grab = true;
+    } else if (event->button() == Qt::RightButton) {
+        if (m_closest && m_points.size() > 2) {
+            m_points.remove(m_closest_id);
+            m_closest = NULL;
+        }
+    }
 
     repaint();
 }
@@ -150,6 +191,22 @@ QPointF CurvesWidget::project(QPoint pt)
     if (pt.y() > height()) pt.setY(height());
 
     return QPointF(1.0 * pt.x() / width(), 1.0 - 1.0 * pt.y() / height());
+}
+
+float fsnap(float f, float rng, float acc) {
+    float rem = fmod(f, rng);
+    if (rem < acc * rng)
+        return f - rem;
+    if (rem > (1-acc) * rng)
+        return f + rng - rem;
+    return f;
+}
+
+QPointF CurvesWidget::snap(QPointF pt) {
+    float rng = 1./m_grid_size;
+    pt.setX(fsnap(pt.x(), rng, m_snap_rng));
+    pt.setY(fsnap(pt.y(), rng, m_snap_rng));
+    return pt;
 }
 
 QPoint CurvesWidget::unproject(QPointF pt)
