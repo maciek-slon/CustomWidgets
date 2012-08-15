@@ -1,10 +1,10 @@
-#include "CurvesWidget.hpp"
+#include "CurvesEditor.hpp"
 #include <QtCore>
 #include <QtGui>
 
 #include <iostream>
 
-CurvesWidget::CurvesWidget(QWidget *parent) :
+CurvesEditor::CurvesEditor(QWidget *parent) :
     QWidget(parent)
 {
     setMouseTracking(true);
@@ -23,11 +23,11 @@ CurvesWidget::CurvesWidget(QWidget *parent) :
     m_snap_rng = 0.2;
 }
 
-CurvesWidget::~CurvesWidget()
+CurvesEditor::~CurvesEditor()
 {
 }
 
-void CurvesWidget::setInterpolation(int method)
+void CurvesEditor::setInterpolation(int method)
 {
     switch(method) {
     case 0: m_spline.setType(Spline::LINEAR); break;
@@ -38,12 +38,12 @@ void CurvesWidget::setInterpolation(int method)
     repaint();
 }
 
-void CurvesWidget::setSnapRange(double range)
+void CurvesEditor::setSnapRange(double range)
 {
     m_snap_rng = range;
 }
 
-void CurvesWidget::setGridSize(int size)
+void CurvesEditor::setGridSize(int size)
 {
     if (size < 1) return;
 
@@ -51,7 +51,7 @@ void CurvesWidget::setGridSize(int size)
     repaint();
 }
 
-void CurvesWidget::paintBackground(QPainter & painter)
+void CurvesEditor::paintBackground(QPainter & painter)
 {
     painter.save();
     QBrush brush(Qt::white);
@@ -81,7 +81,7 @@ void CurvesWidget::paintBackground(QPainter & painter)
     painter.restore();
 }
 
-void CurvesWidget::paintControlPoints(QPainter & painter)
+void CurvesEditor::paintControlPoints(QPainter & painter)
 {
     painter.save();
     Q_FOREACH(QPointF pt, m_points) {
@@ -97,7 +97,7 @@ void CurvesWidget::paintControlPoints(QPainter & painter)
     painter.restore();
 }
 
-void CurvesWidget::paintSpline(QPainter &painter)
+void CurvesEditor::paintSpline(QPainter &painter)
 {
     painter.save();
     QPen pen;
@@ -123,7 +123,7 @@ void CurvesWidget::paintSpline(QPainter &painter)
     painter.restore();
 }
 
-void CurvesWidget::paintEvent(QPaintEvent *)
+void CurvesEditor::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
@@ -132,7 +132,7 @@ void CurvesWidget::paintEvent(QPaintEvent *)
     paintSpline(painter);
 }
 
-void CurvesWidget::mouseMoveEvent(QMouseEvent *event)
+void CurvesEditor::mouseMoveEvent(QMouseEvent *event)
 {
     if (!m_grab) {
         m_closest = findClosestPoint(event->pos(), m_closest_id);
@@ -147,7 +147,7 @@ void CurvesWidget::mouseMoveEvent(QMouseEvent *event)
     repaint();
 }
 
-QPointF * CurvesWidget::findClosestPoint(QPoint pt, int & id)
+QPointF * CurvesEditor::findClosestPoint(QPoint pt, int & id)
 {
     QPointF * ret = NULL;
     int len, min_len = 30;
@@ -163,7 +163,7 @@ QPointF * CurvesWidget::findClosestPoint(QPoint pt, int & id)
     return ret;
 }
 
-void CurvesWidget::mousePressEvent(QMouseEvent *event)
+void CurvesEditor::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         if (!m_closest) {
@@ -183,7 +183,7 @@ void CurvesWidget::mousePressEvent(QMouseEvent *event)
     repaint();
 }
 
-QPointF CurvesWidget::project(QPoint pt)
+QPointF CurvesEditor::project(QPoint pt)
 {
     if (pt.x() < 0) pt.setX(0);
     if (pt.x() > width()) pt.setX(width());
@@ -202,19 +202,34 @@ float fsnap(float f, float rng, float acc) {
     return f;
 }
 
-QPointF CurvesWidget::snap(QPointF pt) {
+QPointF CurvesEditor::snap(QPointF pt) {
     float rng = 1./m_grid_size;
     pt.setX(fsnap(pt.x(), rng, m_snap_rng));
     pt.setY(fsnap(pt.y(), rng, m_snap_rng));
     return pt;
 }
 
-QPoint CurvesWidget::unproject(QPointF pt)
+QPoint CurvesEditor::unproject(QPointF pt)
 {
     return QPoint(pt.x() * width(), (1.0 - pt.y()) * height());
 }
 
-void CurvesWidget::mouseReleaseEvent(QMouseEvent *event)
+void CurvesEditor::mouseReleaseEvent(QMouseEvent *event)
 {
     m_grab = false;
+}
+
+void CurvesEditor::copyToClipboard()
+{
+    QClipboard *clipboard = QApplication::clipboard();
+    QString out = "unsigned char LUT[256] = {";
+    QString sep = "";
+    for (int i = 0; i < 256; ++i) {
+        float x = 1.0 * i / 255;
+        float y = m_spline(x);
+        out += sep + QString("%1").arg((int)(y * 255));
+        sep = ", ";
+    }
+    out += "};";
+    clipboard->setText(out);
 }

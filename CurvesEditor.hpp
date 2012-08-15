@@ -1,5 +1,5 @@
-#ifndef CURVESWIDGET_H
-#define CURVESWIDGET_H
+#ifndef CURVESEDITOR_H
+#define CURVESEDITOR_H
 
 #include <QWidget>
 #include "spline.hpp"
@@ -8,18 +8,19 @@ class QPainter;
 
 using namespace magnet::math;
 
-class CurvesWidget : public QWidget
+class CurvesEditor : public QWidget
 {
     Q_OBJECT
     
 public:
-    explicit CurvesWidget(QWidget *parent = 0);
-    ~CurvesWidget();
+    explicit CurvesEditor(QWidget *parent = 0);
+    ~CurvesEditor();
 
 public slots:
     void setInterpolation(int method);
     void setSnapRange(double range);
     void setGridSize(int size);
+    void copyToClipboard();
 
 protected:
     void paintBackground(QPainter & painter);
@@ -49,4 +50,4 @@ private:
     float m_snap_rng;
 };
 
-#endif // CURVESWIDGET_H
+#endif // CURVESEDITOR_H

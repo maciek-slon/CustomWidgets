@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "MatrixWidget.hpp"
-#include "CurvesWidget.hpp"
+#include "CurvesEditor.hpp"
 #include "ctkDoubleSlider.hpp"
 
 #include <QtGui>
@@ -44,10 +44,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->tabWidget->addTab(tab, "MatrixWidget");
 
-    // CurvesWidget
+    // CurvesEditor
     tab = new QWidget;
 
-    CurvesWidget * cw = new CurvesWidget;
+    CurvesEditor * cw = new CurvesEditor;
 
     QComboBox * cb = new QComboBox();
     cb->addItem("Linear");
@@ -66,6 +66,9 @@ MainWindow::MainWindow(QWidget *parent) :
     sb->setMaximum(16);
     connect(sb, SIGNAL(valueChanged(int)), cw, SLOT(setGridSize(int)));
 
+    QPushButton * btnCopy = new QPushButton("Copy to clipboard");
+    connect(btnCopy, SIGNAL(clicked()), cw, SLOT(copyToClipboard()));
+
     QGridLayout* layout2 = new QGridLayout;
     layout2->addWidget(cw, 0, 0, 1, 2);
     layout2->addWidget(new QLabel("Interpolation"), 1, 0);
@@ -74,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent) :
     layout2->addWidget(ds, 2, 1);
     layout2->addWidget(new QLabel("Grid size"), 3, 0);
     layout2->addWidget(sb, 3, 1);
+    layout2->addWidget(btnCopy, 4, 0, 1, 2);
 
     tab->setLayout(layout2);
 
